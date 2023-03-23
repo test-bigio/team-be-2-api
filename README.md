@@ -1,11 +1,13 @@
 # team-be-2
 
+# How To Run with Docker
 ## Docker Build Image
 docker build -t dockerdemo .
 
-
 ## Docker Run
 docker run -p 8088:80 --name myapp dockerdemo
+
+buka di browser : http://localhost:8088/swagger/index.html
 
 ## Db Migration
 1. Install dotnet ef dengan command: (informasi lebih lanjut: https://learn.microsoft.com/en-us/ef/core/cli/dotnet)
