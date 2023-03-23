@@ -1,4 +1,5 @@
 using System.Globalization;
+using BigioHrServices.Constant;
 using BigioHrServices.Db;
 using BigioHrServices.Db.Entities;
 using BigioHrServices.Model.Datatable;
@@ -23,12 +24,15 @@ namespace BigioHrServices.Services
     {
         private readonly IEmployeeService _employeeService;
         private readonly ApplicationDbContext _db;
+        private IAuditLogService _auditLogService;
 
         public LeaveApplicationServices(ApplicationDbContext db, 
-                                        IEmployeeService employeeService)
+                                        IEmployeeService employeeService,
+                                        IAuditLogService auditLogService)
         {
             _db = db;
             _employeeService = employeeService;
+            _auditLogService = auditLogService;
         }
         
         public Pageable<Leave> ListReviewLeave(DatatableRequest request)
@@ -180,6 +184,8 @@ namespace BigioHrServices.Services
                 _db.SaveChanges();
                 employee.JatahCuti -= 1;
                 _db.Employees.Update(employee);
+                
+                _auditLogService.AddAuditLog(AuditLogConstant.Leave, newLeave.Id.ToString(), AuditLogConstant.Create, request.EmployeeId);
             }
             catch (Exception e)
             {
@@ -241,6 +247,7 @@ namespace BigioHrServices.Services
             employee.IsOnLeave = true;
             _db.Employees.Update(employee);
             _db.SaveChanges();
+            _auditLogService.AddAuditLog(AuditLogConstant.Leave, data.Id.ToString(), AuditLogConstant.Review, Convert.ToInt64(data.reviewedBy));
 
             return message;
         }
