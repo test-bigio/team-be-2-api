@@ -6,6 +6,7 @@ using BigioHrServices.Model.Employee;
 using Microsoft.EntityFrameworkCore;
 using BigioHrServices.Model.Auth;
 using BigioHrServices.Utilities;
+using BigioHrServices.Constant;
 
 namespace BigioHrServices.Services
 {
@@ -28,10 +29,12 @@ namespace BigioHrServices.Services
     public class EmployeeServices : IEmployeeService
     {
         private readonly ApplicationDbContext _db;
+        private IAuditLogService _auditLogService;
 
-        public EmployeeServices(ApplicationDbContext db)
+        public EmployeeServices(ApplicationDbContext db, IAuditLogService auditLogService)
         {
             _db = db;
+            _auditLogService = auditLogService;
         }
 
         public EmployeeLeaveResponse GetEmployeeLeaveByNik(string nik)
@@ -287,6 +290,9 @@ namespace BigioHrServices.Services
             {
                 throw;
             }
+            _auditLogService.AddAuditLog(AuditLogConstant.Employee, request.Name, AuditLogConstant.Create, 0);
+            _auditLogService.AddAuditLog(AuditLogConstant.HistoryDigitalSignature, request.Name,
+                AuditLogConstant.Create, 0);
         }
 
         public void EmployeeUpdate(EmployeeUpdateRequest request)
@@ -317,6 +323,7 @@ namespace BigioHrServices.Services
             {
                 throw;
             }
+            _auditLogService.AddAuditLog(AuditLogConstant.Employee, request.Name, AuditLogConstant.Update, 0);
         }
 
         public void EmployeeDelete(string nik)
@@ -338,6 +345,7 @@ namespace BigioHrServices.Services
             {
                 throw;
             }
+            _auditLogService.AddAuditLog(AuditLogConstant.Employee, name, AuditLogConstant.Delete, 0);
         }
     }
 }

@@ -1,3 +1,4 @@
+using BigioHrServices.Constant;
 using BigioHrServices.Db;
 using BigioHrServices.Db.Entities;
 using BigioHrServices.Model.Datatable;
@@ -19,11 +20,13 @@ namespace BigioHrServices.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly IEmployeeService _employeeServices;
+        private readonly IAuditLogService _auditLogService;
 
-        public DelegationMatrixServices(ApplicationDbContext db, IEmployeeService employeeServices)
+        public DelegationMatrixServices(ApplicationDbContext db, IEmployeeService employeeServices, IAuditLogService auditLogService)
         {
             _db = db;
             _employeeServices = employeeServices;
+            _auditLogService = auditLogService;
         }
         
         public Pageable<DelegationMatrixResponse> GetList(DelegationMatrixRequest request)
@@ -40,6 +43,13 @@ namespace BigioHrServices.Services
                     priority = _delegationMatrix.Priority
                 })
                 .ToList();
+            
+            _auditLogService.AddAuditLog(
+                AuditLogConstant.DelegationMatrix,
+                "List",
+                AuditLogConstant.List,
+                0
+            );
 
             return new Pageable<DelegationMatrixResponse>(data, request.Page, request.PageSize);
         }
@@ -91,6 +101,13 @@ namespace BigioHrServices.Services
             {
                 throw new Exception("Failed to add data");
             }
+            
+            _auditLogService.AddAuditLog(
+                AuditLogConstant.DelegationMatrix,
+                _employeeServices.GetEmployeeById(request.EmployeeId).Name,
+                AuditLogConstant.Create,
+                request.EmployeeId
+            );
         }
 
         public void DelegationMatrixUpdate(long id, DelegationMatrixUpdateRequest request)
@@ -118,6 +135,13 @@ namespace BigioHrServices.Services
             {
                 throw new Exception("Failed to add data");
             }
+            
+            _auditLogService.AddAuditLog(
+                AuditLogConstant.DelegationMatrix,
+                _employeeServices.GetEmployeeById(request.EmployeeId).Name,
+                AuditLogConstant.Update,
+                id
+            );
         }
 
         public DelegationMatrix getById(long id)

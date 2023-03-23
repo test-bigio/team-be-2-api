@@ -22,6 +22,7 @@ namespace BigioHrServices.Constant
         public const string Approve = "Approve";
         public const string Reject = "Reject";
         public const string Deactivate = "Deactivate";
+        public const string Review = "Review";
 
         //Detail Templates
         public const string Detail = "{0} data {1} was {2} by {3} at {4}";

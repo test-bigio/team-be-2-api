@@ -1,3 +1,4 @@
+using BigioHrServices.Constant;
 using BigioHrServices.Db;
 using BigioHrServices.Db.Entities;
 using BigioHrServices.Model.Datatable;
@@ -18,10 +19,12 @@ public interface IPositionService
 public class PositionServices : IPositionService
 {
     private readonly ApplicationDbContext _dbContext;
+    private IAuditLogService _auditLogService;
 
-    public PositionServices(ApplicationDbContext dbContext)
+    public PositionServices(ApplicationDbContext dbContext, IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
+        _auditLogService = auditLogService;
     }
 
     public Pageable<PositionResponse> GetList(PositionSearchRequest request)
@@ -85,6 +88,8 @@ public class PositionServices : IPositionService
         {
             throw new Exception("Failed to add data");
         }
+        
+        _auditLogService.AddAuditLog(AuditLogConstant.Position, request.Code, AuditLogConstant.Create, 0);
     }
     
     public void PositionUpdate(PositionUpdateRequest request)
@@ -115,6 +120,8 @@ public class PositionServices : IPositionService
         {
             throw new Exception("Failed to update data");
         }
+        
+        _auditLogService.AddAuditLog(AuditLogConstant.Position, request.Code, AuditLogConstant.Update, 0);
     }
 
     public void PositionDeactive(long? id)
@@ -142,5 +149,7 @@ public class PositionServices : IPositionService
         {
             throw new Exception("Failed to deactivate position");
         }
+        
+        _auditLogService.AddAuditLog(AuditLogConstant.Position, data.Code, AuditLogConstant.Deactivate, 0);
     }
 }

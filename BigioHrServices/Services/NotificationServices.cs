@@ -1,3 +1,4 @@
+using BigioHrServices.Constant;
 using BigioHrServices.Db;
 using BigioHrServices.Db.Entities;
 using BigioHrServices.Model.Datatable;
@@ -18,10 +19,12 @@ public interface INotificationService
 public class NotificationServices : INotificationService
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IAuditLogService _auditLogService;
 
-    public NotificationServices(ApplicationDbContext dbContext)
+    public NotificationServices(ApplicationDbContext dbContext, IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
+        _auditLogService = auditLogService;
     }
 
     public Pageable<NotificationResponse> GetList(NotificationSearchRequest request)
@@ -54,6 +57,8 @@ public class NotificationServices : INotificationService
             _dbContext.SaveChanges();
         }
         
+        _auditLogService.AddAuditLog(AuditLogConstant.Employee, "Read notification all notification", AuditLogConstant.List, 0);
+
         return new Pageable<NotificationResponse>(data, request.Page, request.PageSize);
     }
 
@@ -67,6 +72,8 @@ public class NotificationServices : INotificationService
         _dbContext.Notification.Update(notification);
         _dbContext.SaveChanges();
         
+        _auditLogService.AddAuditLog(AuditLogConstant.Employee, $"Read notification with id {id}", AuditLogConstant.GetDetail, 0);
+
         return _dbContext.Notification.Select(
             notification => new NotificationResponse
             {
