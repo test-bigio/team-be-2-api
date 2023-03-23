@@ -30,11 +30,13 @@ namespace BigioHrServices.Services
     {
         private readonly ApplicationDbContext _db;
         private IAuditLogService _auditLogService;
+        private IPinSignatureService _iPinSignatureService;
 
-        public EmployeeServices(ApplicationDbContext db, IAuditLogService auditLogService)
+        public EmployeeServices(ApplicationDbContext db, IAuditLogService auditLogService, IPinSignatureService iPinSignatureService)
         {
             _db = db;
             _auditLogService = auditLogService;
+            _iPinSignatureService = iPinSignatureService;
         }
 
         public EmployeeLeaveResponse GetEmployeeLeaveByNik(string nik)
@@ -170,7 +172,7 @@ namespace BigioHrServices.Services
             // TODO check password hash 
             if ((DateTime.Now - employeeResponse.LastUpdatePassword).TotalDays > 30)
             {
-                throw new Exception("Password Expired ,  Silahkan forgot password");
+                throw new Exception("Password Expired Please Reset Password");
             }
 
             var jwtToken = new JwtService().GenerateToken(nik);
@@ -184,34 +186,48 @@ namespace BigioHrServices.Services
         {
             Employee employee = this.GetEmployeeByNIK(nik);
 
-            if (employee == null) throw new Exception("NIK tidak ada!");
+            if (employee == null) throw new Exception("NIK Not Found");
 
 
+            if (lastSignature.Equals(newSignature))
+            {
+                throw new Exception("New And Old Signature Must Different");
+            }
             // TODO check password hash 
             if (!Hasher.VerifyPassword(lastSignature, employee.DigitalSignature))
             {
-                throw new Exception("Signature Lama Tidak Sesuai");
+                throw new Exception("Old Signature Not Match ");
+            }
+
+
+            if (!_iPinSignatureService.CheckSignaturePinHistory(employee.Id, newSignature))
+            {
+                throw new Exception("You Already Use That Signature ,  Please Pick Another");
             }
 
             employee.DigitalSignature = Hasher.HashString(newSignature);
+            
             _db.Employees.Update(employee);
-
+            _db.SaveChanges();
+            // Append Signature to history 
+            _iPinSignatureService.AppendSignatureHistory(employee.Id, newSignature);
             //TODO : Simpan last signature ke table  agar bisa di check apakah signature sudah di pakai
-            return new BaseResponse(true, "Signature Terupdate");
+            return new BaseResponse(true, "Signature Updated");
         }
         
         public BaseResponse ResetPassword(string nik, string password)
         {
             Employee employee = this.GetEmployeeByNIK(nik);
 
-            if (employee == null) throw new Exception("NIK tidak ada!");
+            if (employee == null) throw new Exception("NIK Not Found");
 
             string hashPassword = Hasher.HashString(password);
 
+            
             // check history password
             HistoryPassword historyPassword = this.GetHistoryPasswordByNIK(employee.Id, hashPassword);
             
-            if (historyPassword != null) throw new Exception("Password sudah digunakan sebelumnya!");
+            if (historyPassword != null) throw new Exception("Password Already Use");
 
             try
             {
@@ -226,7 +242,7 @@ namespace BigioHrServices.Services
                 });
             
                 _db.SaveChanges();
-                return new BaseResponse(true, "Password Terupdate");
+                return new BaseResponse(true, "Password Updated");
             }
             catch (Exception exception)
             {
@@ -238,13 +254,13 @@ namespace BigioHrServices.Services
         {
             Employee employee = this.GetEmployeeByNIK(nik);
 
-            if (employee == null) throw new Exception("NIK tidak ada!");
+            if (employee == null) throw new Exception("NIK Not Found");
 
             employee.DigitalSignature = Hasher.HashString(newSignature);
             _db.Employees.Update(employee);
 
             //TODO : Simpan last signature ke table  agar bisa di check apakah signature sudah di pakai
-            return new BaseResponse(true, "Signature Ditambahkan");
+            return new BaseResponse(true, "Signature Added");
         }
 
 
@@ -254,7 +270,7 @@ namespace BigioHrServices.Services
                 .Where(p => p.NIK.ToLower() == request.NIK)
                 .AsNoTracking()
                 .FirstOrDefault();
-            if (data != null) throw new Exception("NIK sudah ada!");
+            if (data != null) throw new Exception("NIK already Exsist");
 
             try
             {
