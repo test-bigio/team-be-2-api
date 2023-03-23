@@ -14,6 +14,7 @@ namespace BigioHrServices.Services
     {
         public BaseResponse LeaveAdd(LeaveAddRequest request);
         public Pageable<Leave> ListReviewLeave(DatatableRequest request);
+        public Leave DetailReviewLeave(long id);
         public Pageable<Leave> ListLeaveByNik(DatatableRequest request);
         public string ReviewLeave(long id, ReviewRequest request);
     }
@@ -242,6 +243,17 @@ namespace BigioHrServices.Services
             _db.SaveChanges();
 
             return message;
+        }
+        
+        public Leave DetailReviewLeave(long id)
+        {
+            var data = _db.Leave
+                .Where(p => p.Id == id)
+                .AsNoTracking()
+                .FirstOrDefault();
+            if (data == null) throw new Exception("Object not found");
+
+            return data;
         }
     }
 }

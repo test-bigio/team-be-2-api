@@ -61,5 +61,12 @@ namespace BigioHrServices.Controllers
         {
             return new BaseResponse(true, _leaveApplicationService.ReviewLeave(id, request));
         }
+        
+        [AllowAnonymous]
+        [HttpGet("review/{id:long}")]
+        public BaseResponse DetailReviewLeave([FromRoute] long id)
+        {
+            return new BaseResponse(_leaveApplicationService.DetailReviewLeave(id), "success");
+        }
     }
 }
