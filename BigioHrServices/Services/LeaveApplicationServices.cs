@@ -15,6 +15,7 @@ namespace BigioHrServices.Services
         public BaseResponse LeaveAdd(LeaveAddRequest request);
         public Pageable<Leave> ListReviewLeave(DatatableRequest request);
         public Pageable<Leave> ListLeaveByNik(DatatableRequest request);
+        public string ReviewLeave(long id, ReviewRequest request);
     }
 
     public class LeaveApplicationServices : ILeaveApplicationService
@@ -186,6 +187,61 @@ namespace BigioHrServices.Services
             }
 
             return new BaseResponse(true, "Leave successfully saved");
+        }
+        
+        public string ReviewLeave(long id, ReviewRequest request)
+        {
+            if (request?.DigitalSignature == null)
+            {
+                throw new BadHttpRequestException("Input Digital Signature!");
+            }
+
+            var data = _db.Leave
+                .Where(p => p.Id == id)
+                .AsNoTracking()
+                .FirstOrDefault() ?? throw new Exception("Object not found");
+
+            var isApprove = request.IsApproved;
+            string message;
+
+            var expired = data.CreatedDate.AddDays(2);
+            if (expired.CompareTo(DateTime.Now) > 0)
+            {
+                data.IsApprove = false;
+                message = "Leave already expired, Rejected";
+            }
+            else
+            {
+                data.IsApprove = isApprove;
+                message = isApprove ? "Leave Approved" : "Leave Rejected";
+            }
+
+            data.UpdatedDate = DateTime.Now;
+            data.reviewedDate = DateTime.Now;
+
+            _db.Leave.Update(data);
+            _db.SaveChanges();
+
+            // create notification
+            var notification = new Notification
+            {
+                EmployeeId = data.EmployeeId,
+                LeaveId = id,
+                Content = message,
+                IsView = false,
+                CreatedBy = data.EmployeeId,
+                CreatedDate = DateTime.UtcNow,
+            };
+            _db.Notification.Add(notification);
+            _db.SaveChanges();
+
+            if (!data.IsApprove) return message;
+            var employee = _employeeService.GetEmployeeById(data.EmployeeId);
+            employee.IsOnLeave = true;
+            _db.Employees.Update(employee);
+            _db.SaveChanges();
+
+            return message;
         }
     }
 }
