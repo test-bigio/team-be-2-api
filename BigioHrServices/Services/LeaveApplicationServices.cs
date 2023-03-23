@@ -13,6 +13,8 @@ namespace BigioHrServices.Services
     public interface ILeaveApplicationService
     {
         public BaseResponse LeaveAdd(LeaveAddRequest request);
+        public Pageable<Leave> ListReviewLeave(DatatableRequest request);
+        public Pageable<Leave> ListLeaveByNik(DatatableRequest request);
     }
 
     public class LeaveApplicationServices : ILeaveApplicationService
@@ -26,6 +28,36 @@ namespace BigioHrServices.Services
             _db = db;
             _employeeService = employeeService;
         }
+        
+        public Pageable<Leave> ListReviewLeave(DatatableRequest request)
+        {
+            var query = _db.Leave
+                .Where(p => p.reviewedDate != null)
+                .AsNoTracking()
+                .AsQueryable();
+
+            // search by reviewer
+            if (!string.IsNullOrEmpty(request.Search))
+            {
+                query = query.Where(p => p.reviewedBy != null && string.Equals(p.reviewedBy, request.Search, StringComparison.CurrentCultureIgnoreCase));
+            }
+            
+            //search by NIK
+            if (!string.IsNullOrEmpty(request.Search))
+            {
+                query = query.Where(p => string.Equals(p.Employee.NIK, request.Search, StringComparison.CurrentCultureIgnoreCase));
+            }
+
+            var data = query.ToList();
+
+            return new Pageable<Leave>(data, request.Page, request.PageSize);
+        }
+
+        public Pageable<Leave> ListLeaveByNik(DatatableRequest request)
+        {
+            return ListReviewLeave(request);
+        }
+        
         public BaseResponse LeaveAdd(LeaveAddRequest request)
         {
             //validate data employee
