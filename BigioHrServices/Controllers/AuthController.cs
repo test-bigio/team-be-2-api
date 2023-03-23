@@ -27,6 +27,14 @@ namespace BigioHrServices.Controllers
 
             return employee;
         }
+        
+        [HttpPost("reset-password")]
+        public BaseResponse ResetPassword([FromQuery] ResetPassword request)
+        {
+            BaseResponse response =  _employeeService.ResetPassword(request.NIK, request.password);
+        
+            return response;
+        }
 
         [HttpPost("update-pin-signature")]
         public BaseResponse UpdatePinSignature([FromQuery] UpdateSignatureRequest request)

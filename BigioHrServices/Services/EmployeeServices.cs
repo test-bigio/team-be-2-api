@@ -19,6 +19,7 @@ namespace BigioHrServices.Services
         public AuthLoginResponse AuthenticateUser(string nik, string passworod);
         public BaseResponse UpdatePinSignature(string nik, string lastSignnature, string newSignature);
         public BaseResponse AddPinSignature(string nik, string newSignature);
+        public BaseResponse ResetPassword(string nik, string password);
         public void EmployeeAdd(EmployeeAddRequest request);
         public void EmployeeUpdate(EmployeeUpdateRequest request);
         public void EmployeeDelete(string nik);
@@ -134,6 +135,14 @@ namespace BigioHrServices.Services
                 .AsNoTracking()
                 .FirstOrDefault();
         }
+        
+        public HistoryPassword GetHistoryPasswordByNIK(long id, string hash)
+        {
+            return _db.HistoryPassword
+                .Where(p => (p.EmployeeId == id) && (p.Password == hash))
+                .AsNoTracking()
+                .FirstOrDefault();
+        }
 
 
         public Employee GetEmployeeById(long id)
@@ -186,6 +195,40 @@ namespace BigioHrServices.Services
 
             //TODO : Simpan last signature ke table  agar bisa di check apakah signature sudah di pakai
             return new BaseResponse(true, "Signature Terupdate");
+        }
+        
+        public BaseResponse ResetPassword(string nik, string password)
+        {
+            Employee employee = this.GetEmployeeByNIK(nik);
+
+            if (employee == null) throw new Exception("NIK tidak ada!");
+
+            string hashPassword = Hasher.HashString(password);
+
+            // check history password
+            HistoryPassword historyPassword = this.GetHistoryPasswordByNIK(employee.Id, hashPassword);
+            
+            if (historyPassword != null) throw new Exception("Password sudah digunakan sebelumnya!");
+
+            try
+            {
+                employee.Password = hashPassword;
+            
+                _db.Employees.Update(employee);
+            
+                _db.HistoryPassword.Add(new HistoryPassword
+                {
+                    EmployeeId = employee.Id,
+                    Password = employee.Password,
+                });
+            
+                _db.SaveChanges();
+                return new BaseResponse(true, "Password Terupdate");
+            }
+            catch (Exception exception)
+            {
+                return new BaseResponse(true, exception.Message);
+            }
         }
 
         public BaseResponse AddPinSignature(string nik, string newSignature)
