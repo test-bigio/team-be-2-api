@@ -19,7 +19,7 @@ builder.Services.AddScoped(typeof(IEmployeeService), typeof(EmployeeServices));
 builder.Services.AddScoped(typeof(INotificationService), typeof(NotificationServices));
 builder.Services.AddScoped(typeof(IDelegationMatrixService), typeof(DelegationMatrixServices));
 builder.Services.AddScoped(typeof(ILeaveApplicationService), typeof(LeaveApplicationServices));
-// builder.Services.AddScoped(typeof(IPinSignatureService), typeof(PinSignatureService));
+builder.Services.AddScoped(typeof(IPinSignatureService), typeof(PinSignatureService));
 builder.Services.AddScoped(typeof(IPositionService), typeof(PositionServices));
 builder.Services.AddScoped(typeof(IAuditLogService), typeof(AuditLogService));
 
